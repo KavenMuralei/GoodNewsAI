@@ -2,6 +2,8 @@ class scraper:
     from bs4 import BeautifulSoup as btfs
     from article import Article
     import requests, re
+    from analyzeSentiment import polarity_scores
+    import csv
 
 
     html = requests.get("https://news.yahoo.com/").text
@@ -24,7 +26,7 @@ class scraper:
     headline_image = []
     headline_description = []
     headline_source =[]
-
+    headline_sentiment = []
 
 
     #Image scraper
@@ -43,6 +45,11 @@ class scraper:
         match = re.search(r'>([^<]+)<', headline)
         extracted_headline = match.group(1)
         headline_titles.append(extracted_headline)
+        sentiment_Dict = polarity_scores(extracted_headline)
+        if (sentiment_Dict["neg"] > sentiment_Dict["pos"]):
+            headline_sentiment.append("-"+str(sentiment_Dict["neg"]))
+        else:
+            headline_sentiment.append(sentiment_Dict["pos"])
 
     for headline in headline_titles:
         print(headline)
@@ -66,11 +73,15 @@ class scraper:
         headline_source.append(extracted_source)
     for source in headline_source:
         print(source)
-    def articleFind(titles,description,source,image,duration,category):
-        from article import Article
-        article = []
-        for i in range(50):
-            article.append(Article(titles[i],description[i],source[i],image[i],None,None))
-        return article
-    article = articleFind(headline_titles,headline_description,headline_source,headline_image,None,None)
-    print(article[0].title)
+    for sentiment in headline_sentiment:
+        print(sentiment)
+
+    # Writes to CSV
+    file = open("scraped_quotes.csv","w")
+    writer = csv.writer(file)
+    writer.writerow(["TITLE", "SENTIMENT", "SOURCE", "DESCRIPTION", "IMAGE"])
+    
+    for i in range(50):
+        writer.writerow([headline_titles[i], headline_sentiment[i], headline_source[i], headline_description[i], headline_image[i]])
+    file.close()
+
